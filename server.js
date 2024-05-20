@@ -25,20 +25,42 @@ const tool_functions = [
   }
 ];
 
-function getSushiRestaurants() {
+async function getSushiRestaurants() {
   console.log("Fetching sushi restaurants...")
-  return JSON.stringify(require("./data/sushi.json"))
+  // return JSON.stringify(require("./data/sushi.json"))
+
+  const response = await fetch("http://localhost:8000/sushi", {
+      method: 'GET',
+      headers: {'Content-Type': 'application/json'}
+    });
+    const data = await response.json();
+
+    // console.log(data)
+    return JSON.stringify(data);
 }
 
-function getParkingGarages() {
+async function getParkingGarages() {
   console.log("Fetching parking garages...")
-  return JSON.stringify(require("./data/parking.json"))
+  // return JSON.stringify(require("./data/parking.json"))
+  const response = await fetch("http://localhost:8000/parking", {
+      method: 'GET',
+      headers: {'Content-Type': 'application/json'}
+    });
+    const data = await response.json();
+
+    // console.log(data)
+    return JSON.stringify(data);
 }
 
-var messages = [{"role": "system", "content": `You are a helping a user located in Marienplatz, Munich. The user may ask for either sushi restaurants or parking garages nearby, including details such as distance and payment methods. Hide the options that are not currently open or available. Do not give more information than requested.`}];
+var messages = [{"role": "system", "content": `You are a helping a user located in Marienplatz, Munich. 
+The user may ask for either sushi restaurants or parking garages nearby, including details such as distance and payment methods.
+Hide the results that are closed or unavailable, include only and all the other results.
+Don't invent information that is not in the fetched information.`}];
+
+// Unless explicitly requested by the user (and if not already specified in previous answers), mention ONLY title, address and distance of each venue/parking.
 
 app.post('/completion', async (req, res) => {
-  console.log("---- NEW PROMPT ----")
+  console.log("\n---- NEW PROMPT ----")
 
   const text = req.body.text;
 
@@ -64,7 +86,7 @@ app.post('/completion', async (req, res) => {
     for (const toolCall of toolCalls) {
       const functionName = toolCall.function.name;
       const functionToCall = availableFunctions[functionName];
-      const functionResponse = functionToCall();
+      const functionResponse = await functionToCall();
 
       messages.push({
         tool_call_id: toolCall.id,
@@ -87,8 +109,11 @@ app.post('/completion', async (req, res) => {
 
     messages.push({"role": "assistant", "content": completion.choices[0].message.content});
   }
-  console.log(completion.choices[0]);
+  // console.log(completion.choices[0]);
+  console.log(completion.usage);
   res.send(completion.choices[0]);
+
+  console.log("---- QUERY ANSWERED ----");
 });
 
 app.get('/sushi', async (req, res) => {
