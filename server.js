@@ -35,7 +35,7 @@ function getParkingGarages() {
   return JSON.stringify(require("./data/parking.json"))
 }
 
-var messages = [{"role": "system", "content": `You are a helping a user located in Marienplatz, Munich. The user may ask for either sushi restaurants or parking garages nearby, including details such as distance and payment methods. Hide the options that are not currently open or available. Don't give more information than requested.`}];
+var messages = [{"role": "system", "content": `You are a helping a user located in Marienplatz, Munich. The user may ask for either sushi restaurants or parking garages nearby, including details such as distance and payment methods. Hide the options that are not currently open or available. Do not give more information than requested.`}];
 
 app.post('/completion', async (req, res) => {
   console.log("---- NEW PROMPT ----")
@@ -50,8 +50,6 @@ app.post('/completion', async (req, res) => {
     tool_choice: "auto",
     model: "gpt-3.5-turbo",
   });  
-  
-  // messages.push({"role": "assistant", "content": completion.choices[0].message.content});
 
   const responseMessage = completion.choices[0].message;
 
@@ -80,10 +78,17 @@ app.post('/completion', async (req, res) => {
       messages: messages,
       model: "gpt-3.5-turbo",
     });  
-
-    console.log(completion.choices[0]);
-    res.send(completion.choices[0]);
   }
+  else {
+    completion = await openai.chat.completions.create({
+      messages: messages,
+      model: "gpt-3.5-turbo",
+    });
+
+    messages.push({"role": "assistant", "content": completion.choices[0].message.content});
+  }
+  console.log(completion.choices[0]);
+  res.send(completion.choices[0]);
 });
 
 app.get('/sushi', async (req, res) => {
