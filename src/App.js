@@ -16,8 +16,8 @@ const App = () => {
     });
     const data = await response.json();
     console.log(data);
-    // setResponse(data.message.content)
-    setResponse(data.value)
+    setResponse(data.message.content)
+    // setResponse(data.value)
   };
 
   return (
