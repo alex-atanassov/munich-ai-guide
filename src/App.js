@@ -6,18 +6,36 @@ const App = () => {
   const [prompt, setPrompt] = useState('');
   const [response, setResponse] = useState('');
 
+  // const getCompletion = async (e) => {
+  //   e.preventDefault()
+
+  //   const response = await fetch("http://localhost:8000/completion", {
+  //     method: 'POST',
+  //     body: JSON.stringify({text: prompt}),
+  //     headers: {'Content-Type': 'application/json'}
+  //   });
+  //   const data = await response.json();
+  //   console.log(data);
+  //   setResponse(data.message.content)
+  //   // setResponse(data.value)
+  // };
+
   const getCompletion = async (e) => {
     e.preventDefault()
+    setResponse("")
 
     const response = await fetch("http://localhost:8000/completion", {
       method: 'POST',
       body: JSON.stringify({text: prompt}),
       headers: {'Content-Type': 'application/json'}
     });
-    const data = await response.json();
-    console.log(data);
-    setResponse(data.message.content)
-    // setResponse(data.value)
+
+    const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
+    while(true) {
+      const {value, done} = await reader.read()
+      if(done) break
+      setResponse((prev) => prev + value)
+    }
   };
 
   const sendAudioInput = async (blob) => {
