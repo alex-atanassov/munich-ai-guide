@@ -3,6 +3,8 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const OpenAI = require("openai");
+const multer = require('multer');
+const upload = multer();
 require("dotenv").config({ override: true });
 
 app.use(express.json());
@@ -33,24 +35,24 @@ async function getSushiRestaurants() {
       method: 'GET',
       headers: {'Content-Type': 'application/json'}
     });
-    const data = await response.json();
+  const data = await response.json();
 
-    // console.log(data)
-    return JSON.stringify(data);
+  // console.log(data)
+  return JSON.stringify(data);
 }
 
 async function getParkingGarages() {
   console.log("Fetching parking garages...")
   // return JSON.stringify(require("./data/parking.json"))
-  
+
   const response = await fetch("http://localhost:8000/parking", {
       method: 'GET',
       headers: {'Content-Type': 'application/json'}
     });
-    const data = await response.json();
+  const data = await response.json();
 
-    // console.log(data)
-    return JSON.stringify(data);
+  // console.log(data)
+  return JSON.stringify(data);
 }
 
 var messages = [{"role": "system", "content": `You are a helping a user located in Marienplatz, Munich. 
@@ -59,6 +61,41 @@ Hide the results that are closed or unavailable, include only and all the other 
 Don't invent information that is not in the fetched information.`}];
 
 // Unless explicitly requested by the user (and if not already specified in previous answers), mention ONLY title, address and distance of each venue/parking.
+
+
+app.post('/tts', upload.single('file'), async (req, res) => {
+  console.log("\n---- NEW TTS PROMPT ----")
+
+  // console.log(req.file)
+
+  const file = new Blob([req.file.buffer], {
+    type: 'application/octet-stream',
+  });
+  file.name = 'audio.wav';
+  file.lastModified = Date.now();
+
+  const transcription = await openai.audio.transcriptions.create({
+    file: file,
+    model: "whisper-1",
+    language: "en"
+  });
+
+  console.log(transcription.text);
+  // res.send(transcription.text);
+
+  console.log("---- FORWARDING QUERY TO GPT ----");
+
+  const response = await fetch("http://localhost:8000/completion", {
+      method: 'POST',
+    body: JSON.stringify({text: transcription.text}),
+    headers: {'Content-Type': 'application/json'}
+  });
+
+  const data = await response.json();
+  res.send(data.message.content);
+
+  // console.log("\n---- TTS QUERY ANSWERED ----");
+});
 
 app.post('/completion', async (req, res) => {
   console.log("\n---- NEW PROMPT ----")
