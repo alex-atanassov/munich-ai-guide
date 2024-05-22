@@ -156,7 +156,7 @@ app.post('/completion', async (req, res) => {
 
   res.end();
 
-  // console.log(completeMessage);
+  console.log(completeMessage);
   
   messages.push({"role": "assistant", "content": completeMessage});
   

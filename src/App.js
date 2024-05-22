@@ -5,25 +5,21 @@ import 'font-awesome/css/font-awesome.min.css';
 
 const App = () => {
   const [prompt, setPrompt] = useState('');
-  const [response, setResponse] = useState('');
+  const [answer, setResponse] = useState('Hello! How can I assist you today?');
+  const [messages, setMessages] = useState([]);
 
-  // const getCompletion = async (e) => {
-  //   e.preventDefault()
-
-  //   const response = await fetch("http://localhost:8000/completion", {
-  //     method: 'POST',
-  //     body: JSON.stringify({text: prompt}),
-  //     headers: {'Content-Type': 'application/json'}
-  //   });
-  //   const data = await response.json();
-  //   console.log(data);
-  //   setResponse(data.message.content)
-  //   // setResponse(data.value)
-  // };
+  const onEnterPress = (e) => {
+    if(e.keyCode === 13 && e.shiftKey === false) {
+      e.preventDefault();
+      getCompletion(e);
+    }
+  }
 
   const getCompletion = async (e) => {
     e.preventDefault()
+    setMessages([...messages, answer, prompt]);
     setResponse("")
+    setPrompt("")
 
     const response = await fetch("http://localhost:8000/completion", {
       method: 'POST',
@@ -39,34 +35,18 @@ const App = () => {
     }
   };
 
-  const sendAudioInput = async (blob) => {
-    const formData = new FormData();
-    formData.append('file', blob);
-
-    const response = await fetch("http://localhost:8000/tts", {
-      method: 'POST',
-      body: formData,
-      // headers: {'Content-Type': 'audio/mpeg'}
-    });
-
-    const data = await response.text();
-    setResponse(data);
-
-    // const audio = document.createElement('audio');
-    // audio.src = url;
-    // audio.controls = true;
-    // document.body.appendChild(audio);
-  };
-
   return (
     <div>
       <main className="main">
         {/* <img src="/logo192.png" className="icon" alt="logo"/> */}
         <h3>Munich AI Guide</h3>
         
-        <div className="result">{response.split(/\r\n|\n|\r/gm).map(line => {
-          return <p>{line}<br /></p>
-        })}</div>
+        <div className="result">
+          <div>{messages.map(msg => {
+            return <p>{msg}<br /></p>
+          })}</div>
+          <p>{answer}</p>
+        </div>
 
         <form onSubmit={getCompletion} autoComplete="off">
           <textarea
@@ -74,8 +54,9 @@ const App = () => {
             placeholder="Type here to enter a question"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={onEnterPress}
           />
-          <AudioRecorder
+          {/* <AudioRecorder
             onRecordingComplete={sendAudioInput}
             audioTrackConstraints={{
               noiseSuppression: true,
@@ -83,7 +64,7 @@ const App = () => {
             }}
             onNotAllowedOrFound={(err) => console.table(err)}
             // showVisualizer={true}
-          />
+          /> */}
           <button onClick={getCompletion} disabled={prompt===""}>
             <i class="fa fa-lg fa-paper-plane"/>
           </button>
