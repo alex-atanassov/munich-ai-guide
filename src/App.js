@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "./App.css"
 import { AudioRecorder } from 'react-audio-voice-recorder';
+import 'font-awesome/css/font-awesome.min.css';
 
 const App = () => {
   const [prompt, setPrompt] = useState('');
@@ -62,28 +63,32 @@ const App = () => {
       <main className="main">
         {/* <img src="/logo192.png" className="icon" alt="logo"/> */}
         <h3>Munich AI Guide</h3>
-        <form onSubmit={getCompletion} autoComplete="off">
-          <input
-            type="text"
-            name="question"
-            placeholder="Enter a question"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-          />
-          <input type="submit" value="Send" disabled={prompt===""}/>
-        </form>
-        <AudioRecorder
-        onRecordingComplete={sendAudioInput}
-        audioTrackConstraints={{
-          noiseSuppression: true,
-          echoCancellation: true,
-        }}
-        onNotAllowedOrFound={(err) => console.table(err)}
-        // showVisualizer={true}
-      />
+        
         <div className="result">{response.split(/\r\n|\n|\r/gm).map(line => {
           return <p>{line}<br /></p>
         })}</div>
+
+        <form onSubmit={getCompletion} autoComplete="off">
+          <textarea
+            name="question"
+            placeholder="Type here to enter a question"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+          />
+          <AudioRecorder
+            onRecordingComplete={sendAudioInput}
+            audioTrackConstraints={{
+              noiseSuppression: true,
+              echoCancellation: true,
+            }}
+            onNotAllowedOrFound={(err) => console.table(err)}
+            // showVisualizer={true}
+          />
+          <button onClick={getCompletion} disabled={prompt===""}>
+            <i class="fa fa-lg fa-paper-plane"/>
+          </button>
+        </form>
+        
       </main>
     </div>
   );
