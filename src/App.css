@@ -1,3 +1,7 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
 @font-face {
     font-family: "ColfaxAI";
     src: url(https://cdn.openai.com/API/fonts/ColfaxAIRegular.woff2)
@@ -73,7 +77,7 @@
     padding: 10px 20px;
   }
   .main .result {
-    font-weight: bold;
+    /* font-weight: bold; */
     margin-top: 30px;
     width: 60vw;
     height: 65vh;
@@ -84,4 +88,10 @@
   }
   .result div, .result p {
     white-space: pre-wrap;
+  }
+  .bot {
+    color: #3333daaf;
+  }
+  .user {
+    color: #10a37ec5;
   }

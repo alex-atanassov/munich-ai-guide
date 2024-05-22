@@ -1,12 +1,20 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import "./App.css"
-import { AudioRecorder } from 'react-audio-voice-recorder';
-import 'font-awesome/css/font-awesome.min.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faRobot } from '@fortawesome/free-solid-svg-icons'
+import { faUser } from '@fortawesome/free-solid-svg-icons'
+import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
+import { Avatar } from "react-daisyui";
 
 const App = () => {
   const [prompt, setPrompt] = useState('');
-  const [answer, setResponse] = useState('Hello! How can I assist you today?');
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(['Hello! How can I assist you today?']);
+  const chatRef = useRef(null);
+
+  useEffect(() => {
+    // chatRef.current?.scrollIntoView();
+    chatRef.current?.scrollIntoView({behavior: "smooth"});
+  }, [messages])
 
   const onEnterPress = (e) => {
     if(e.keyCode === 13 && e.shiftKey === false) {
@@ -17,8 +25,7 @@ const App = () => {
 
   const getCompletion = async (e) => {
     e.preventDefault()
-    setMessages([...messages, answer, prompt]);
-    setResponse("")
+    setMessages([...messages, prompt, ""]);
     setPrompt("")
 
     const response = await fetch("http://localhost:8000/completion", {
@@ -31,7 +38,7 @@ const App = () => {
     while(true) {
       const {value, done} = await reader.read()
       if(done) break
-      setResponse((prev) => prev + value)
+      setMessages((prev) => [...prev.slice(0,-1), prev.slice(-1)[0] + value])
     }
   };
 
@@ -41,11 +48,36 @@ const App = () => {
         {/* <img src="/logo192.png" className="icon" alt="logo"/> */}
         <h3>Munich AI Guide</h3>
         
-        <div className="result">
+        {/* <div className="result">
           <div>{messages.map(msg => {
             return <p>{msg}<br /></p>
           })}</div>
           <p>{answer}</p>
+        </div> */}
+
+        <div className="result w-2/3">
+          {messages.map((message, index) => (
+            <div className="mt-4">
+              {message.length !== 0 &&
+              <div className="flex items-center">
+                <Avatar shape="circle" className="mr-4">
+                  <div className="rounded-full h-10 w-10 text-center content-center">
+                    {index % 2 === 0 ? 
+                    <FontAwesomeIcon icon={faRobot} size="2x" className="bot"/>
+                    : <FontAwesomeIcon icon={faUser} size="2x" className="user"/>}
+                  </div>
+                </Avatar>
+                <div>
+                  {index % 2 === 0 ? 
+                  <h4 className="font-semibold select-none bot">Chatbot</h4>
+                  : <h4 className="font-semibold select-none user">Alessandro</h4>}
+                </div>
+              </div>}
+              <div className="ml-16 mt-1 mb-6">
+                <div>{message}</div>
+              </div>
+            </div>
+          ))}<div ref={chatRef}></div>
         </div>
 
         <form onSubmit={getCompletion} autoComplete="off">
@@ -66,7 +98,7 @@ const App = () => {
             // showVisualizer={true}
           /> */}
           <button onClick={getCompletion} disabled={prompt===""}>
-            <i class="fa fa-lg fa-paper-plane"/>
+            <FontAwesomeIcon icon={faPaperPlane} size="xl"/>
           </button>
         </form>
         
