@@ -63,7 +63,7 @@ Don't invent information that is not in the fetched information.`}];
 // Unless explicitly requested by the user (and if not already specified in previous answers), mention ONLY title, address and distance of each venue/parking.
 
 
-app.post('/tts', upload.single('file'), async (req, res) => {
+app.post('/sst', upload.single('file'), async (req, res) => {
   console.log("\n---- NEW TTS PROMPT ----")
 
   // console.log(req.file)
@@ -95,6 +95,24 @@ app.post('/tts', upload.single('file'), async (req, res) => {
   res.send(data.message.content);
 
   // console.log("\n---- TTS QUERY ANSWERED ----");
+});
+
+app.post('/tts', async (req, res) => {
+  console.log("\n---- NEW TTS PROMPT ----")
+
+  console.log(req.body.text)
+
+  const mp3 = await openai.audio.speech.create({
+    model: "tts-1",
+    voice: "echo",
+    input: req.body.text
+  });
+
+  console.log(mp3)
+
+  mp3.body.pipe(res)
+
+  console.log("\n---- TTS QUERY ANSWERED ----");
 });
 
 app.post('/completion', async (req, res) => {
@@ -159,7 +177,6 @@ app.post('/completion', async (req, res) => {
   console.log(completeMessage);
   
   messages.push({"role": "assistant", "content": completeMessage});
-  
   
   // console.log(completion.choices[0]);
   // console.log(completion.usage);

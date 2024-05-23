@@ -10,6 +10,7 @@ const App = () => {
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState(['Hello! How can I assist you today?']);
   const chatRef = useRef(null);
+  const messagesRef = useRef([]);
 
   useEffect(() => {
     // chatRef.current?.scrollIntoView();
@@ -19,9 +20,46 @@ const App = () => {
   const onEnterPress = (e) => {
     if(e.keyCode === 13 && e.shiftKey === false) {
       e.preventDefault();
-      getCompletion(e);
+      getTTSAnswer(e);
     }
   }
+
+  // const sendAudioInput = async (blob) => {
+  //   const formData = new FormData();
+  //   formData.append('file', blob);
+
+  //   const response = await fetch("http://localhost:8000/tts", {
+  //     method: 'POST',
+  //     body: formData,
+  //     // headers: {'Content-Type': 'audio/mpeg'}
+  //   });
+
+  //   const data = await response.text();
+  //   setResponse(data);
+
+  //   // const audio = document.createElement('audio');
+  //   // audio.src = url;
+  //   // audio.controls = true;
+  //   // document.body.appendChild(audio);
+  // };
+
+  const getTTSAnswer = async (e) => {
+    e.preventDefault()
+
+    const response = await fetch("http://localhost:8000/tts", {
+      method: 'POST',
+      body: JSON.stringify({text: prompt}),
+      headers: {'Content-Type': 'application/json'}
+    });
+
+    const data = await response.blob();
+    const url = URL.createObjectURL(data);
+
+    const audio = document.createElement('audio');
+    audio.src = url;
+    audio.controls = true;
+    messagesRef.current[messages.length-1]?.appendChild(audio);
+  };
 
   const getCompletion = async (e) => {
     e.preventDefault()
@@ -67,10 +105,12 @@ const App = () => {
                     : <FontAwesomeIcon icon={faUser} size="2x" className="user"/>}
                   </div>
                 </Avatar>
-                <div>
+                <div className="flex" ref={ref => {
+                  messagesRef.current[index] = ref
+                }}>
                   {index % 2 === 0 ? 
-                  <h4 className="font-semibold select-none bot">Chatbot</h4>
-                  : <h4 className="font-semibold select-none user">Alessandro</h4>}
+                  <h4 className="font-semibold select-none bot mr-4">Chatbot</h4>
+                  : <h4 className="font-semibold select-none user mr-4">Alessandro</h4>}
                 </div>
               </div>}
               <div className="ml-16 mt-1 mb-6">
@@ -80,7 +120,7 @@ const App = () => {
           ))}<div ref={chatRef}></div>
         </div>
 
-        <form onSubmit={getCompletion} autoComplete="off">
+        <form onSubmit={getTTSAnswer} autoComplete="off">
           <textarea
             name="question"
             placeholder="Type here to enter a question"
@@ -97,7 +137,7 @@ const App = () => {
             onNotAllowedOrFound={(err) => console.table(err)}
             // showVisualizer={true}
           /> */}
-          <button onClick={getCompletion} disabled={prompt===""}>
+          <button onClick={getTTSAnswer} disabled={prompt===""}>
             <FontAwesomeIcon icon={faPaperPlane} size="xl"/>
           </button>
         </form>
