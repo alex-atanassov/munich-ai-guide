@@ -1,12 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import "./App.css"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faRobot } from '@fortawesome/free-solid-svg-icons'
-import { faUser } from '@fortawesome/free-solid-svg-icons'
-import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
-import { faCirclePlay } from '@fortawesome/free-solid-svg-icons'
-import { faCirclePause } from '@fortawesome/free-solid-svg-icons'
-import { Avatar } from "react-daisyui";
+import { faRobot, faUser, faPaperPlane, faCirclePlay, faCirclePause } from '@fortawesome/free-solid-svg-icons'
+import { Avatar, Loading } from "react-daisyui";
 import { AudioRecorder } from 'react-audio-voice-recorder';
 
 const App = () => {
@@ -14,12 +10,17 @@ const App = () => {
   const [messages, setMessages] = useState(['Hello! How can I assist you today?']);
   const [audios, setAudios] = useState([null]);
   const [playing, setPlaying] = useState([null]);
+  const [isQuerying, setIsQuerying] = useState(false);
   const chatRef = useRef(null);
 
   useEffect(() => {
     // chatRef.current?.scrollIntoView();
     chatRef.current?.scrollIntoView({behavior: "smooth"});
   }, [messages])
+  useEffect(() => {
+    if(isQuerying) 
+      chatRef.current?.scrollIntoView({behavior: "smooth"});
+  }, [isQuerying])
 
   const onEnterPress = (e) => {
     if(e.keyCode === 13 && e.shiftKey === false) {
@@ -67,7 +68,6 @@ const App = () => {
   const sendSTTInput = async (blob) => {
     const formData = new FormData();
     formData.append('file', blob);
-    setMessages([...messages, ""]);
 
     const response = await fetch("http://localhost:8000/stt", {
       method: 'POST',
@@ -82,15 +82,18 @@ const App = () => {
   const getCompletion = async (e) => {
     if(e) {
       e.preventDefault()
-      setMessages(prompt ? [...messages, prompt, ""] : [...messages, ""]);
+      setMessages([...messages, prompt, ""]);
     }
     setPrompt("")
+    setTimeout(() => setIsQuerying(true), 500);
 
     const response = await fetch("http://localhost:8000/completion", {
       method: 'POST',
       body: JSON.stringify({text: prompt}),
       headers: {'Content-Type': 'application/json'}
     });
+
+    setIsQuerying(false);
 
     const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
     var answer = ""
@@ -138,7 +141,11 @@ const App = () => {
                 <div>{message}</div>
               </div>
             </div>
-          ))}<div ref={chatRef}></div>
+          ))}<div ref={chatRef}>
+            {isQuerying && (
+              <Loading className="mt-4 ml-16" variant="dots" size="lg" />
+            )}
+          </div>
         </div>
 
         <form onSubmit={getCompletion} autoComplete="off">
