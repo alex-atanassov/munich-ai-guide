@@ -58,15 +58,14 @@ async function getParkingGarages() {
 var messages = [{"role": "system", "content": `You are a helping a user located in Marienplatz, Munich. 
 The user may ask for either sushi restaurants or parking garages nearby.
 Hide the results that are closed or unavailable, include only and all the other results.
+Be concise when listing the available venues, instead of mentioning every detail.
 Don't invent information that is not in the fetched information.`}];
 
 // Unless explicitly requested by the user (and if not already specified in previous answers), mention ONLY title, address and distance of each venue/parking.
 
 
-app.post('/sst', upload.single('file'), async (req, res) => {
+app.post('/stt', upload.single('file'), async (req, res) => {
   console.log("\n---- NEW TTS PROMPT ----")
-
-  // console.log(req.file)
 
   const file = new Blob([req.file.buffer], {
     type: 'application/octet-stream',
@@ -81,18 +80,20 @@ app.post('/sst', upload.single('file'), async (req, res) => {
   });
 
   console.log(transcription.text);
-  // res.send(transcription.text);
+  res.send(transcription.text);
 
-  console.log("---- FORWARDING QUERY TO GPT ----");
+  messages.push({"role": "user", "content": transcription.text});
 
-  const response = await fetch("http://localhost:8000/completion", {
-      method: 'POST',
-    body: JSON.stringify({text: transcription.text}),
-    headers: {'Content-Type': 'application/json'}
-  });
+  // console.log("---- FORWARDING QUERY TO GPT ----");
 
-  const data = await response.json();
-  res.send(data.message.content);
+  // const response = await fetch("http://localhost:8000/completion", {
+  //     method: 'POST',
+  //   body: JSON.stringify({text: transcription.text}),
+  //   headers: {'Content-Type': 'application/json'}
+  // });
+
+  // const data = await response.json();
+  // res.send(data.message.content);
 
   // console.log("\n---- TTS QUERY ANSWERED ----");
 });
@@ -107,8 +108,6 @@ app.post('/tts', async (req, res) => {
     voice: "echo",
     input: req.body.text
   });
-
-  console.log(mp3)
 
   mp3.body.pipe(res)
 
@@ -173,15 +172,10 @@ app.post('/completion', async (req, res) => {
   }
 
   res.end();
-
-  console.log(completeMessage);
   
   messages.push({"role": "assistant", "content": completeMessage});
   
-  // console.log(completion.choices[0]);
   // console.log(completion.usage);
-  
-  // res.send(completion.choices[0]);
 
   console.log("---- QUERY ANSWERED ----");
 });

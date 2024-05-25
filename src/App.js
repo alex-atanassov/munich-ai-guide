@@ -7,6 +7,7 @@ import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
 import { faCirclePlay } from '@fortawesome/free-solid-svg-icons'
 import { faCirclePause } from '@fortawesome/free-solid-svg-icons'
 import { Avatar } from "react-daisyui";
+import { AudioRecorder } from 'react-audio-voice-recorder';
 
 const App = () => {
   const [prompt, setPrompt] = useState('');
@@ -14,7 +15,6 @@ const App = () => {
   const [audios, setAudios] = useState([null]);
   const [playing, setPlaying] = useState([null]);
   const chatRef = useRef(null);
-  const messagesRef = useRef([]);
 
   useEffect(() => {
     // chatRef.current?.scrollIntoView();
@@ -27,25 +27,6 @@ const App = () => {
       getCompletion(e);
     }
   }
-
-  // const sendAudioInput = async (blob) => {
-  //   const formData = new FormData();
-  //   formData.append('file', blob);
-
-  //   const response = await fetch("http://localhost:8000/tts", {
-  //     method: 'POST',
-  //     body: formData,
-  //     // headers: {'Content-Type': 'audio/mpeg'}
-  //   });
-
-  //   const data = await response.text();
-  //   setResponse(data);
-
-  //   // const audio = document.createElement('audio');
-  //   // audio.src = url;
-  //   // audio.controls = true;
-  //   // document.body.appendChild(audio);
-  // };
 
   const getTTSAnswer = async (text) => {
     // e.preventDefault()
@@ -66,9 +47,6 @@ const App = () => {
     setAudios((prev) => [...prev, null, audio]);
     setPlaying((prev) => [...prev, false, true]);
     audio.play();
-
-    // audio.controls = true;
-    // messagesRef.current[messages.length-1]?.appendChild(audio);
   };
 
   function soundToggle(index) {
@@ -86,9 +64,26 @@ const App = () => {
     setPlaying((prev) => [...prev.slice(0,index), false, ...prev.slice(index+1)])
   }
 
+  const sendSTTInput = async (blob) => {
+    const formData = new FormData();
+    formData.append('file', blob);
+    setMessages([...messages, ""]);
+
+    const response = await fetch("http://localhost:8000/stt", {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await response.text();
+    setMessages([...messages, data, ""]);
+    getCompletion();
+  };
+
   const getCompletion = async (e) => {
-    e.preventDefault()
-    setMessages([...messages, prompt, ""]);
+    if(e) {
+      e.preventDefault()
+      setMessages(prompt ? [...messages, prompt, ""] : [...messages, ""]);
+    }
     setPrompt("")
 
     const response = await fetch("http://localhost:8000/completion", {
@@ -105,7 +100,6 @@ const App = () => {
       answer += value;
       setMessages((prev) => [...prev.slice(0,-1), prev.slice(-1)[0] + value])
     }
-
     getTTSAnswer(answer);
   };
 
@@ -127,9 +121,7 @@ const App = () => {
                     : <FontAwesomeIcon icon={faUser} size="2x" className="user"/>}
                   </div>
                 </Avatar>
-                <div className="flex" ref={ref => {
-                  messagesRef.current[index] = ref
-                }}>
+                <div className="flex">
                   {index % 2 !== 0 ? 
                   <h4 className="font-semibold select-none user mr-4">Alessandro</h4>
                   : <div className="flex">
@@ -157,15 +149,15 @@ const App = () => {
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={onEnterPress}
           />
-          {/* <AudioRecorder
-            onRecordingComplete={sendAudioInput}
+          <AudioRecorder
+            onRecordingComplete={sendSTTInput}
             audioTrackConstraints={{
               noiseSuppression: true,
               echoCancellation: true,
             }}
             onNotAllowedOrFound={(err) => console.table(err)}
             // showVisualizer={true}
-          /> */}
+          />
           <button onClick={getCompletion} disabled={prompt===""}>
             <FontAwesomeIcon icon={faPaperPlane} size="xl"/>
           </button>
