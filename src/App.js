@@ -23,7 +23,7 @@ const App = () => {
   }, [isQuerying])
 
   const onEnterPress = (e) => {
-    if(e.keyCode === 13 && e.shiftKey === false) {
+    if(e.keyCode === 13 && e.shiftKey === false && !(/^\s*$/.test(prompt))) {
       e.preventDefault();
       getCompletion(e);
     }
@@ -112,7 +112,7 @@ const App = () => {
         {/* <img src="/logo192.png" className="icon" alt="logo"/> */}
         <h3>Munich AI Guide</h3>
         
-        <div className="result w-2/3">
+        <div className="result w-11/12 md:w-10/12 lg:w-9/12 xl:w-8/12 2xl:w-3/5">
           {messages.map((message, index) => (
             <div className="mt-4">
               {message.length !== 0 &&
@@ -148,7 +148,7 @@ const App = () => {
           </div>
         </div>
 
-        <form onSubmit={getCompletion} autoComplete="off">
+        <form onSubmit={getCompletion} autoComplete="off" className="w-11/12 md:w-10/12 lg:w-9/12 xl:w-8/12 2xl:w-3/5">
           <textarea
             name="question"
             placeholder="Type here to enter a question"
@@ -163,10 +163,10 @@ const App = () => {
               echoCancellation: true,
             }}
             onNotAllowedOrFound={(err) => console.table(err)}
-            // showVisualizer={true}
+            showVisualizer={true}
           />
-          <button onClick={getCompletion} disabled={prompt===""}>
-            <FontAwesomeIcon icon={faPaperPlane} size="xl"/>
+          <button onClick={getCompletion} disabled={(/^\s*$/.test(prompt))}>
+            <FontAwesomeIcon icon={faPaperPlane} size="lg"/>
           </button>
         </form>
         
