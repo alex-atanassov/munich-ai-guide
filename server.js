@@ -35,8 +35,12 @@ async function getSushiRestaurants() {
       method: 'GET',
       headers: {'Content-Type': 'application/json'}
     });
-  const data = await response.json();
 
+  if(!response.ok) {
+    const error = await response.text();
+    return error;
+  }
+  const data = await response.json();
   // console.log(data)
   return JSON.stringify(data);
 }
@@ -49,8 +53,12 @@ async function getParkingGarages() {
       method: 'GET',
       headers: {'Content-Type': 'application/json'}
     });
+  
+  if(!response.ok) {
+    const error = await response.text();
+    return error;
+  }  
   const data = await response.json();
-
   // console.log(data)
   return JSON.stringify(data);
 }
@@ -61,57 +69,55 @@ Hide the results that are closed or unavailable, include only and all the other 
 Be concise when listing the available venues, instead of mentioning every detail.
 Don't invent information that is not in the fetched information.`}];
 
-// Unless explicitly requested by the user (and if not already specified in previous answers), mention ONLY title, address and distance of each venue/parking.
-
-
 app.post('/stt', upload.single('file'), async (req, res) => {
-  console.log("\n---- NEW TTS PROMPT ----")
+  console.log("\n---- NEW STT PROMPT ----")
 
-  const file = new Blob([req.file.buffer], {
-    type: 'application/octet-stream',
-  });
-  file.name = 'audio.wav';
-  file.lastModified = Date.now();
+  try {
+    const file = new Blob([req.file.buffer], {
+      type: 'application/octet-stream',
+    });
+    file.name = 'audio.wav';
+    file.lastModified = Date.now();
 
-  const transcription = await openai.audio.transcriptions.create({
-    file: file,
-    model: "whisper-1",
-    language: "en"
-  });
+    const transcription = await openai.audio.transcriptions.create({
+      file: file,
+      model: "whisper-1",
+      language: "en"
+    });
 
-  console.log(transcription.text);
-  res.send(transcription.text);
+    console.log(transcription.text);
+    res.send(transcription.text);
 
-  messages.push({"role": "user", "content": transcription.text});
+    messages.push({"role": "user", "content": transcription.text});
+    console.log("\n---- STT QUERY ANSWERED ----");
 
-  // console.log("---- FORWARDING QUERY TO GPT ----");
-
-  // const response = await fetch("http://localhost:8000/completion", {
-  //     method: 'POST',
-  //   body: JSON.stringify({text: transcription.text}),
-  //   headers: {'Content-Type': 'application/json'}
-  // });
-
-  // const data = await response.json();
-  // res.send(data.message.content);
-
-  // console.log("\n---- TTS QUERY ANSWERED ----");
+  } catch (e) {
+    console.log(e.message);
+    var status = parseInt(e.message.split(' ')[0], 10);
+    if(isNaN(status)) status = 400;
+    res.status(status).send(e.message);
+  }
 });
 
 app.post('/tts', async (req, res) => {
   console.log("\n---- NEW TTS PROMPT ----")
-
   console.log(req.body.text)
 
-  const mp3 = await openai.audio.speech.create({
-    model: "tts-1",
-    voice: "echo",
-    input: req.body.text
-  });
-
-  mp3.body.pipe(res)
-
-  console.log("\n---- TTS QUERY ANSWERED ----");
+  try {
+    const mp3 = await openai.audio.speech.create({
+      model: "tts-1",
+      voice: "echo",
+      input: req.body.text
+    });
+    mp3.body.pipe(res)
+    console.log("\n---- TTS QUERY ANSWERED ----");
+  
+  } catch (e) {
+    console.log(e.message);
+    var status = parseInt(e.message.split(' ')[0], 10);
+    if(isNaN(status)) status = 400;
+    res.status(status).send(e.message);
+  }
 });
 
 app.post('/completion', async (req, res) => {
@@ -121,62 +127,67 @@ app.post('/completion', async (req, res) => {
 
   messages.push({"role": "user", "content": text});
 
-  let completion = await openai.chat.completions.create({
-    messages: messages,
-    tools: tool_functions,
-    tool_choice: "auto",
-    model: "gpt-3.5-turbo",
-  });  
+  try {
+    let completion = await openai.chat.completions.create({
+      messages: messages,
+      tools: tool_functions,
+      tool_choice: "auto",
+      model: "gpt-3.5-turbo",
+    });  
 
-  const responseMessage = completion.choices[0].message;
+    const responseMessage = completion.choices[0].message;
 
-  const toolCalls = responseMessage.tool_calls;
-  if (responseMessage.tool_calls) {
-    const availableFunctions = {
-      getSushiRestaurants: getSushiRestaurants,
-      getParkingGarages: getParkingGarages
-    }; 
-    
-    messages.push(responseMessage); // extend conversation with assistant's reply
-    for (const toolCall of toolCalls) {
-      const functionName = toolCall.function.name;
-      const functionToCall = availableFunctions[functionName];
-      const functionResponse = await functionToCall();
+    const toolCalls = responseMessage.tool_calls;
+    if (responseMessage.tool_calls) {
+      const availableFunctions = {
+        getSushiRestaurants: getSushiRestaurants,
+        getParkingGarages: getParkingGarages
+      }; 
+      
+      messages.push(responseMessage); // extend conversation with assistant's reply
+      for (const toolCall of toolCalls) {
+        const functionName = toolCall.function.name;
+        const functionToCall = availableFunctions[functionName];
+        const functionResponse = await functionToCall();
 
-      messages.push({
-        tool_call_id: toolCall.id,
-        role: "tool",
-        name: functionName,
-        content: functionResponse,
-      }); // extend conversation with function response
+        messages.push({
+          tool_call_id: toolCall.id,
+          role: "tool",
+          name: functionName,
+          content: functionResponse,
+        }); // extend conversation with function response
+      }
     }
+    completion = await openai.chat.completions.create({
+      messages: messages,
+      model: "gpt-3.5-turbo",
+      stream: true
+    });
+
+    var completeMessage = "";
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Transfer-Encoding', 'chunked');
+    for await (const chunk of completion) {
+      const [choice] = chunk.choices;
+      const { content } = choice.delta;
+
+      const finalContent = content ? content : '';
+      res.write(finalContent);
+
+      completeMessage += finalContent;
+    }
+
+    res.end();
+    
+    messages.push({"role": "assistant", "content": completeMessage});
+  } catch (e) {
+    console.log(e.message);
+    var status = parseInt(e.message.split(' ')[0], 10);
+    res.status(status).send(e.message);
   }
-  completion = await openai.chat.completions.create({
-    messages: messages,
-    model: "gpt-3.5-turbo",
-    stream: true
-  });
-
-  var completeMessage = "";
-
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Transfer-Encoding', 'chunked');
-  for await (const chunk of completion) {
-    const [choice] = chunk.choices;
-    const { content } = choice.delta;
-
-    const finalContent = content ? content : '';
-    res.write(finalContent);
-
-    completeMessage += finalContent;
-  }
-
-  res.end();
-  
-  messages.push({"role": "assistant", "content": completeMessage});
   
   // console.log(completion.usage);
-
   console.log("---- QUERY ANSWERED ----");
 });
 

@@ -8,6 +8,7 @@ import { AudioRecorder } from 'react-audio-voice-recorder';
 const App = () => {
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState(['Hello! How can I assist you today?']);
+  const [error, setError] = useState('');
   const [audios, setAudios] = useState([null]);
   const [playing, setPlaying] = useState([null]);
   const [isQuerying, setIsQuerying] = useState(false);
@@ -16,7 +17,7 @@ const App = () => {
   useEffect(() => {
     // chatRef.current?.scrollIntoView();
     chatRef.current?.scrollIntoView({behavior: "smooth"});
-  }, [messages])
+  }, [messages, error])
   useEffect(() => {
     if(isQuerying) 
       chatRef.current?.scrollIntoView({behavior: "smooth"});
@@ -30,24 +31,35 @@ const App = () => {
   }
 
   const getTTSAnswer = async (text) => {
-    // e.preventDefault()
+    try {
+      const response = await fetch("http://localhost:8000/tts", {
+        method: 'POST',
+        body: JSON.stringify({text: text}),
+        headers: {'Content-Type': 'application/json'}
+      });
 
-    const response = await fetch("http://localhost:8000/tts", {
-      method: 'POST',
-      body: JSON.stringify({text: text}),
-      headers: {'Content-Type': 'application/json'}
-    });
+      if(!response.ok) {
+        const error = await response.text();
+        throw new Error(error);
+      }
 
-    const data = await response.blob();
-    const url = URL.createObjectURL(data);
+      const data = await response.blob();
+      const url = URL.createObjectURL(data);
 
-    const audio = document.createElement('audio');
-    audio.src = url;
-    audio.onended = () => soundEnd(audios.length + 1);
+      const audio = document.createElement('audio');
+      audio.src = url;
+      audio.onended = () => soundEnd(audios.length + 1);
 
-    setAudios((prev) => [...prev, null, audio]);
-    setPlaying((prev) => [...prev, false, true]);
-    audio.play();
+      setAudios((prev) => [...prev, null, audio]);
+      setPlaying((prev) => [...prev, false, true]);
+      audio.play();
+
+    } catch (e) {
+      setIsQuerying(false);
+      setAudios((prev) => [...prev, null, null]);
+      setPlaying((prev) => [...prev, false, false]);
+      setError("Error: " + e.message);
+    }
   };
 
   function soundToggle(index) {
@@ -69,14 +81,25 @@ const App = () => {
     const formData = new FormData();
     formData.append('file', blob);
 
-    const response = await fetch("http://localhost:8000/stt", {
-      method: 'POST',
-      body: formData,
-    });
+    try {
+      const response = await fetch("http://localhost:8000/stt", {
+        method: 'POST',
+        body: formData,
+      });
 
-    const data = await response.text();
-    setMessages([...messages, data, ""]);
-    getCompletion();
+      if(!response.ok) {
+        const error = await response.text();
+        throw new Error(error);
+      }
+
+      const data = await response.text();
+      setMessages([...messages, data, ""]);
+      getCompletion();
+
+    } catch (e) {
+      setIsQuerying(false);
+      setError("Error: " + e.message);
+    }
   };
 
   const getCompletion = async (e) => {
@@ -85,25 +108,39 @@ const App = () => {
       setMessages([...messages, prompt, ""]);
     }
     setPrompt("")
+    setError("")
     setTimeout(() => setIsQuerying(true), 500);
 
-    const response = await fetch("http://localhost:8000/completion", {
-      method: 'POST',
-      body: JSON.stringify({text: prompt}),
-      headers: {'Content-Type': 'application/json'}
-    });
+    try {
+      const response = await fetch("http://localhost:8000/completion", {
+        method: 'POST',
+        body: JSON.stringify({text: prompt}),
+        headers: {'Content-Type': 'application/json'}
+      });
 
-    setIsQuerying(false);
+      if(!response.ok) {
+        const error = await response.text();
+        throw new Error(error);
+      }        
 
-    const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
-    var answer = ""
-    while(true) {
-      const {value, done} = await reader.read()
-      if(done) break
-      answer += value;
-      setMessages((prev) => [...prev.slice(0,-1), prev.slice(-1)[0] + value])
+      setIsQuerying(false);
+
+      const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
+      var answer = ""
+      while(true) {
+        const {value, done} = await reader.read()
+        if(done) break
+        answer += value;
+        setMessages((prev) => [...prev.slice(0,-1), prev.slice(-1)[0] + value])
+      }
+      getTTSAnswer(answer);
+
+    } catch (e) {
+      setIsQuerying(false);
+      setAudios((prev) => [...prev, null, null]);
+      setPlaying((prev) => [...prev, false, false]);
+      setError("Error: " + e.message);
     }
-    getTTSAnswer(answer);
   };
 
   return (
@@ -142,8 +179,11 @@ const App = () => {
               </div>
             </div>
           ))}<div ref={chatRef}>
-            {isQuerying && (
+            {isQuerying && !error && (
               <Loading className="mt-4 ml-16" variant="dots" size="lg" />
+            )}
+            {error && (
+              <div className="error mt-4 ml-16">{error}</div>
             )}
           </div>
         </div>
