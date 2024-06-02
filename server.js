@@ -65,9 +65,10 @@ async function getParkingGarages() {
 
 var messages = [{"role": "system", "content": `You are a helping a user located in Marienplatz, Munich. 
 The user may ask for either sushi restaurants or parking garages nearby.
-Hide the results that are closed or unavailable, include only and all the other results.
+Hide the results that are closed or unavailable, but include all the other results.
 Be concise when listing the available venues, instead of mentioning every detail.
-Don't invent information that is not in the fetched information.`}];
+Please respond to the user’s question based on the information fetched from the given endpoints. If you cannot find the answer, kindly state that you cannot help.
+`}];
 
 app.post('/stt', upload.single('file'), async (req, res) => {
   console.log("\n---- NEW STT PROMPT ----")
@@ -132,7 +133,9 @@ app.post('/completion', async (req, res) => {
       messages: messages,
       tools: tool_functions,
       tool_choice: "auto",
-      model: "gpt-3.5-turbo",
+      // model: "gpt-3.5-turbo",
+      model: "gpt-4o",
+      temperature: 0.1,
     });  
 
     const responseMessage = completion.choices[0].message;
@@ -160,7 +163,9 @@ app.post('/completion', async (req, res) => {
     }
     completion = await openai.chat.completions.create({
       messages: messages,
-      model: "gpt-3.5-turbo",
+      // model: "gpt-3.5-turbo",
+      model: "gpt-4o",
+      temperature: 0.1,
       stream: true
     });
 
@@ -184,6 +189,7 @@ app.post('/completion', async (req, res) => {
   } catch (e) {
     console.log(e.message);
     var status = parseInt(e.message.split(' ')[0], 10);
+    // if(isNaN(status)) status = 400;
     res.status(status).send(e.message);
   }
   
