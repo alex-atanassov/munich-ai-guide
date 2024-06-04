@@ -1,7 +1,7 @@
 const PORT = 8000;
 const express = require("express");
-const cors = require("cors");
 const app = express();
+const cors = require("cors");
 const OpenAI = require("openai");
 const multer = require('multer');
 const upload = multer();
@@ -66,7 +66,7 @@ async function getParkingGarages() {
 var messages = [{"role": "system", "content": `You are a helping a user located in Marienplatz, Munich. 
 The user may ask for either sushi restaurants or parking garages nearby.
 Hide the results that are closed or unavailable, but include all the other results.
-Be concise when listing the available venues, instead of mentioning every detail.
+Be concise when listing the available venues, instead of mentioning every detail. Avoid including the phone number.
 Please respond to the user’s question based on the information fetched from the given endpoints. If you cannot find the answer, kindly state that you cannot help.
 `}];
 
@@ -135,8 +135,8 @@ app.post('/completion', async (req, res) => {
       tool_choice: "auto",
       // model: "gpt-3.5-turbo",
       model: "gpt-4o",
-      temperature: 0.1,
-    });  
+      temperature: 0,
+    });
 
     const responseMessage = completion.choices[0].message;
 
@@ -165,7 +165,7 @@ app.post('/completion', async (req, res) => {
       messages: messages,
       // model: "gpt-3.5-turbo",
       model: "gpt-4o",
-      temperature: 0.1,
+      temperature: 0,
       stream: true
     });
 

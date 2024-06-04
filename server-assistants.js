@@ -1,3 +1,7 @@
+// This old version uses the Beta Assistants API in place of Chat Completions API.
+// This version is not updated with the latest changes on the frontend, nor does it implement the TTS and STT.
+// Use server.js as backend for the demo.
+
 const PORT = 8000;
 const express = require("express");
 const cors = require("cors");
@@ -13,7 +17,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 var assistant;
 var thread;
 
-async function main() { 
+async function main() {
   assistant = await openai.beta.assistants.create({
     model: "gpt-3.5-turbo",
     instructions:
