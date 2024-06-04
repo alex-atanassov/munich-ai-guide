@@ -1,5 +1,6 @@
 // This old version uses the Beta Assistants API in place of Chat Completions API.
-// This version is not updated with the latest changes on the frontend, nor does it implement the TTS and STT.
+// This version is not updated and will not work with the latest changes on the frontend.
+// I still left the code to show how it interfaces with the Assistants API.
 // Use server.js as backend for the demo.
 
 const PORT = 8000;
