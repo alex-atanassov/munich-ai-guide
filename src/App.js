@@ -1,3 +1,5 @@
+// Frontend script
+
 import { useState, useRef, useEffect } from "react";
 import "./App.css"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -14,6 +16,7 @@ const App = () => {
   const [isQuerying, setIsQuerying] = useState(false);
   const chatRef = useRef(null);
 
+  // Scroll chat to bottom when the chat history is updated
   useEffect(() => {
     // chatRef.current?.scrollIntoView();
     chatRef.current?.scrollIntoView({behavior: "smooth"});
@@ -23,6 +26,7 @@ const App = () => {
       chatRef.current?.scrollIntoView({behavior: "smooth"});
   }, [isQuerying])
 
+  // Handle Enter press to send text input
   const onEnterPress = (e) => {
     if(e.keyCode === 13 && e.shiftKey === false && !(/^\s*$/.test(prompt))) {
       e.preventDefault();
@@ -38,14 +42,17 @@ const App = () => {
         headers: {'Content-Type': 'application/json'}
       });
 
+      // Error handling
       if(!response.ok) {
         const error = await response.text();
         throw new Error(error);
       }
 
+      // Handle audio output
       const data = await response.blob();
       const url = URL.createObjectURL(data);
 
+      // Create and play audio element
       const audio = document.createElement('audio');
       audio.src = url;
       audio.onended = () => soundEnd(audios.length + 1);
@@ -62,6 +69,7 @@ const App = () => {
     }
   };
 
+  // Play/Pause audio
   function soundToggle(index) {
     if(audios[index].paused) {
       audios[index].play();
@@ -87,13 +95,17 @@ const App = () => {
         body: formData,
       });
 
+      // Error handling
       if(!response.ok) {
         const error = await response.text();
         throw new Error(error);
       }
 
+      // Update UI with transcribed user input
       const data = await response.text();
       setMessages([...messages, data, ""]);
+      
+      // Send text query to LLM
       getCompletion();
 
     } catch (e) {
@@ -118,6 +130,7 @@ const App = () => {
         headers: {'Content-Type': 'application/json'}
       });
 
+      // Error handling
       if(!response.ok) {
         const error = await response.text();
         throw new Error(error);
@@ -125,6 +138,7 @@ const App = () => {
 
       setIsQuerying(false);
 
+      // Handle text stream
       const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
       var answer = ""
       while(true) {
@@ -133,6 +147,8 @@ const App = () => {
         answer += value;
         setMessages((prev) => [...prev.slice(0,-1), prev.slice(-1)[0] + value])
       }
+
+      // Convert answer to speech
       getTTSAnswer(answer);
 
     } catch (e) {
@@ -146,9 +162,9 @@ const App = () => {
   return (
     <div>
       <main className="main">
-        {/* <img src="/logo192.png" className="icon" alt="logo"/> */}
         <h3>Munich AI Guide</h3>
         
+        {/* Chat history view */}
         <div className="result w-11/12 md:w-10/12 lg:w-9/12 xl:w-8/12 2xl:w-3/5">
           {messages.map((message, index) => (
             <div className="mt-4">
@@ -188,6 +204,7 @@ const App = () => {
           </div>
         </div>
 
+        {/* Form for user text/audio input */}
         <form onSubmit={getCompletion} autoComplete="off" className="w-11/12 md:w-10/12 lg:w-9/12 xl:w-8/12 2xl:w-3/5">
           <textarea
             name="question"
