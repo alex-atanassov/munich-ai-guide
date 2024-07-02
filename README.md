@@ -2,7 +2,7 @@
 
 AI Guide for recommendations about sushi restaurants and parking garages in Marienplatz, Munich. 
 
-This project uses OpenAI's GPT-4o, combined with text-to-speech and speech-to-text for multimodal interaction capabilities. 
+This project uses OpenAI's GPT-4o, combined with text-to-speech and speech-to-text for multimodal interaction capabilities.
 
 Munich AI Guide presents a [React](https://github.com/facebook/create-react-app) frontend, and an ExpressJS backend interfacing with the OpenAI APIs.
 
